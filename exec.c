@@ -2,49 +2,95 @@
 
 
 
+
+
 /**
  *
- *   * concat_path - Concatenate a path name and a program name
+ *  * splitstring - splits a string and makes it an array of pointers to words
  *
- *     * @pathname: The path name to concatenate with the program name
+ *   * @str: the string to be split
  *
- *       * @progname: The program name to place in the path name
+ *    * @delim: the delimiter
  *
- *         *
+ *     * Return: array of pointers to words
  *
- *           * Return: The path name concatenated with the program name
- *
- *             */
+ *      */
 
-char *concat_path(char *pathname, char *progname)
+
+
+char **splitstring(char *str, const char *delim)
 
 {
 
-		int prog_len = 0, path_len = 0, new_sz = 0;
+		int i, wn;
+
+			char **array;
+
+				char *token;
+
+					char *copy;
 
 
 
-			prog_len = _strlen(progname);
+						copy = malloc(_strlen(str) + 1);
 
-				path_len = _strlen(pathname);
+							if (copy == NULL)
 
-					new_sz = sizeof(char) * (path_len + prog_len + 2);
+									{
 
-						pathname = _realloc(pathname, (path_len + 1), new_sz);
+												perror(_getenv("_"));
 
-							if (!pathname)
+														return (NULL);
 
-										return (NULL);
+															}
+
+								i = 0;
+
+									while (str[i])
+
+											{
+
+														copy[i] = str[i];
+
+																i++;
+
+																	}
+
+										copy[i] = '\0';
 
 
 
-								_strcat(pathname, "/");
+											token = strtok(copy, delim);
 
-									_strcat(pathname, progname);
+												array = malloc((sizeof(char *) * 2));
+
+													array[0] = _strdup(token);
 
 
 
-										return (pathname);
+														i = 1;
+
+															wn = 3;
+
+																while (token)
+
+																		{
+
+																					token = strtok(NULL, delim);
+
+																							array = _realloc(array, (sizeof(char *) * (wn - 1)), (sizeof(char *) * wn));
+
+																									array[i] = _strdup(token);
+
+																											i++;
+
+																													wn++;
+
+																														}
+
+																	free(copy);
+
+																		return (array);
 
 }
 
@@ -52,95 +98,51 @@ char *concat_path(char *pathname, char *progname)
 
 /**
  *
- *   * find - Verify if a command is found in the system
+ *  * execute - executes a command
  *
- *     * @cname: The command name to find in the system
+ *   * @argv: array of arguments
  *
- *       *
- *
- *         * Return: The path name of the command found or NULL if failed
- *
- *           */
+ *    */
 
-char *find(char *cname)
+
+
+void execute(char **argv)
 
 {
 
-		char *env_path = NULL, **p_tokns = NULL;
 
-			int i = 0, num_del = 0;
 
-				struct stat sb;
+		int d, status;
 
 
 
-					if (cname)
+			if (!argv || !argv[0])
+
+						return;
+
+				d = fork();
+
+					if (d == -1)
 
 							{
 
-										if (stat(cname, &sb) != 0 && cname[0] != '/')
+										perror(_getenv("_"));
 
-													{
+											}
 
-																	env_path = _getenv("PATH");
+						if (d == 0)
 
-																				num_del = count_delims(env_path, ":") + 1;
+								{
 
-																							p_tokns = tokenize(env_path, ":", num_del);
+											execve(argv[0], argv, environ);
 
+														perror(argv[0]);
 
+																exit(EXIT_FAILURE);
 
-																										while (p_tokns[i])
+																	}
 
-																														{
-
-																																			p_tokns[i] = concat_path(p_tokns[i], cname);
-
-
-
-																																							if (stat(p_tokns[i], &sb) == 0)
-
-																																												{
-
-																																																		free(cname);
-
-																																																							cname = _strdup(p_tokns[i]);
-
-																																																												frees_get_env(env_path);
-
-																																																																	frees_tokens(p_tokns);
-
-																																																																						return (cname);
-
-																																																																										}
-
-
-
-																																											i++;
-
-																																														}
-
-
-
-																													frees_get_env(env_path);
-
-																																frees_tokens(p_tokns);
-
-																																		}
-
-
-
-												if (stat(cname, &sb) == 0)
-
-																return (cname);
-
-													}
-
-
-
-						free(cname);
-
-							return (NULL);
+							wait(&status);
 
 }
 
@@ -148,54 +150,124 @@ char *find(char *cname)
 
 /**
  *
- *   * exec - Executes a command
+ *  * _realloc - Reallocates memory block
  *
- *     * @cname: The command to execute
+ *   * @ptr: previous pointer
  *
- *       * @opts: The options or flags to the command
+ *    * @old_size: old size of previous pointer
  *
- *         *
+ *     * @new_size: new size for our pointer
  *
- *           * Return: A integer status value
+ *      * Return: New resized Pointer
  *
- *             */
+ *       */
 
-int exec(char *cname, char **opts)
+
+
+void *_realloc(void *ptr, unsigned int old_size, unsigned int new_size)
 
 {
 
-		pid_t child;
+		char *new;
 
-			int status;
-
-
-
-				switch (child = fork())
-
-						{
-
-									case -1:
-
-													perror("fork failed");
-
-																return (-1);
-
-																		case 0:
-
-																			execve(cname, opts, environ);
-
-																					default:
-
-																						do {
-
-																											waitpid(child, &status, WUNTRACED);
-
-																														} while (WIFEXITED(status) == 0 && WIFSIGNALED(status) == 0);
-
-																							}
+			char *old;
 
 
 
-					return (0);
+				unsigned int i;
+
+
+
+					if (ptr == NULL)
+
+								return (malloc(new_size));
+
+
+
+						if (new_size == old_size)
+
+									return (ptr);
+
+
+
+							if (new_size == 0 && ptr != NULL)
+
+									{
+
+												free(ptr);
+
+														return (NULL);
+
+															}
+
+
+
+								new = malloc(new_size);
+
+									old = ptr;
+
+										if (new == NULL)
+
+													return (NULL);
+
+
+
+											if (new_size > old_size)
+
+													{
+
+																for (i = 0; i < old_size; i++)
+
+																				new[i] = old[i];
+
+																		free(ptr);
+
+																				for (i = old_size; i < new_size; i++)
+
+																								new[i] = '\0';
+
+																					}
+
+												if (new_size < old_size)
+
+														{
+
+																	for (i = 0; i < new_size; i++)
+
+																					new[i] = old[i];
+
+																			free(ptr);
+
+																				}
+
+													return (new);
+
+}
+
+
+
+/**
+ *
+ *  * freearv - frees the array of pointers arv
+ *
+ *   *@arv: array of pointers
+ *
+ *    */
+
+
+
+void freearv(char **arv)
+
+{
+
+		int i;
+
+
+
+			for (i = 0; arv[i]; i++)
+
+						free(arv[i]);
+
+				free(arv);
 
 }
